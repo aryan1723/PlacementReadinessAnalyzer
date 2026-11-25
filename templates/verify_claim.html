@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Evidence Claim — P06{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Faculty Audit · {{ claim.student.user.regno_or_id }}</div>
+    <h1 class="page-title">Verify or Decline Claim</h1>
+    <p class="page-subtitle">Student: {{ claim.student.user.name }} · Category: {{ claim.get_claim_type_display }}</p>
+  </div>
+  <a href="/faculty/student/{{ claim.student.user.regno_or_id }}/" class="btn btn-secondary">Back to Student Dossier</a>
+</div>
+
+<div class="grid-2">
+  <div class="card-surface">
+    <h2 class="card-title">Submitted Evidence Details</h2>
+    <table>
+      <tbody>
+        <tr><th>Title</th><td><strong>{{ claim.title }}</strong></td></tr>
+        <tr><th>Target Skill</th><td>{% if claim.skill %}{{ claim.skill.name }} ({{ claim.skill.get_dimension_display }}){% else %}Unmapped{% endif %}</td></tr>
+        <tr><th>Current Status</th><td><span class="badge">{{ claim.status }}</span></td></tr>
+        {% if claim.organization %}<tr><th>Organization</th><td>{{ claim.organization }}</td></tr>{% endif %}
+        {% if claim.credential_id %}<tr><th>Credential ID</th><td>{{ claim.credential_id }}</td></tr>{% endif %}
+        {% if claim.project_role %}<tr><th>Role</th><td>{{ claim.project_role }}</td></tr>{% endif %}
+        {% if claim.tech_stack %}<tr><th>Tech Stack</th><td>{{ claim.tech_stack }}</td></tr>{% endif %}
+        {% if claim.academic_result or claim.academic_grade %}
+        <tr><th>Academic Result</th><td>{{ claim.academic_result }} {{ claim.academic_grade }}</td></tr>
+        {% endif %}
+        {% if claim.score_text %}<tr><th>Score / Rank</th><td>{{ claim.score_text }}</td></tr>{% endif %}
+        {% if claim.duration_weeks %}<tr><th>Duration (Weeks)</th><td>{{ claim.duration_weeks }}</td></tr>{% endif %}
+        {% if claim.duration_hours %}<tr><th>Duration (Hours)</th><td>{{ claim.duration_hours }}</td></tr>{% endif %}
+        <tr><th>Description</th><td>{{ claim.description|default:"—" }}</td></tr>
+      </tbody>
+    </table>
+
+    <div class="mt-20" style="display: flex; gap: 10px; flex-wrap: wrap;">
+      {% if claim.proof_link %}<a href="{{ claim.proof_link }}" target="_blank" class="btn btn-secondary btn-sm">Open Proof Link</a>{% endif %}
+      {% if claim.certificate_document %}<a href="{{ claim.certificate_document.url }}" target="_blank" class="btn btn-secondary btn-sm">Open Certificate</a>{% endif %}
+      {% if claim.proof_attachment %}<a href="{{ claim.proof_attachment.url }}" target="_blank" class="btn btn-secondary btn-sm">Open Attachment</a>{% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Verification Decision</h2>
+    <p class="muted mb-12">
+      Verifying this claim with a level (1–4) immediately recalculates the student's readiness score and skill gaps across all placement drives.
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Save Verification Decision</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

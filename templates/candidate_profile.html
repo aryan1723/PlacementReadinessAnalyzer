@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Candidate Profile: {{ student_account.regno_or_id }} — P06{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Candidate Dossier · {{ student_account.regno_or_id }}</div>
+    <h1 class="page-title">{{ student_account.name }}</h1>
+    <p class="page-subtitle">
+      Branch: {{ profile.branch|default:"Unset" }} · Graduation Year: {{ profile.graduation_year|default:"Unset" }} · CGPA: {{ profile.cgpa }} · Backlogs: {{ profile.backlogs }}
+    </p>
+  </div>
+  <a href="{{ back_url }}" class="btn btn-secondary">Back</a>
+</div>
+
+<div class="card-surface mb-20">
+  <h2 class="card-title">Career Summary &amp; External Artifacts</h2>
+  <p class="muted mb-12">{{ profile.career_summary|default:"No career summary provided." }}</p>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    {% if profile.github_url %}<a href="{{ profile.github_url }}" target="_blank" class="btn btn-secondary btn-sm">GitHub</a>{% endif %}
+    {% if profile.linkedin_url %}<a href="{{ profile.linkedin_url }}" target="_blank" class="btn btn-secondary btn-sm">LinkedIn</a>{% endif %}
+    {% if profile.portfolio_url %}<a href="{{ profile.portfolio_url }}" target="_blank" class="btn btn-secondary btn-sm">Portfolio</a>{% endif %}
+    {% if profile.cv_file %}<a href="{{ profile.cv_file.url }}" target="_blank" class="btn btn-primary btn-sm">Download CV</a>{% endif %}
+  </div>
+</div>
+
+{% if current_app %}
+<div class="card mb-20">
+  <h2 class="card-title">Drive Evaluation &amp; Snapshot ({{ current_app.drive.company_name }} — {{ current_app.drive.role_title }})</h2>
+  <p>
+    <strong>Live Readiness:</strong> {{ current_app.readiness_score }}% ·
+    <strong>Status:</strong> <span class="badge">{{ current_app.status }}</span>
+  </p>
+  <p class="muted mt-12">{{ current_app.gap_summary }}</p>
+  {% if current_app.applied_at %}
+  <p class="muted mt-12">
+    <strong>Locked Application Snapshot ({{ current_app.applied_at }}):</strong> CGPA {{ current_app.applied_cgpa }}, Backlogs {{ current_app.applied_backlogs }}, Readiness {{ current_app.applied_readiness_score }}%
+  </p>
+  {% endif %}
+</div>
+{% endif %}
+
+<div class="card mb-20">
+  <h2 class="card-title">Skill Evidence Claims ({{ claims|length }})</h2>
+  {% if claims %}
+  <table>
+    <thead>
+      <tr>
+        <th>Category &amp; Skill</th>
+        <th>Title &amp; Details</th>
+        <th>Verification</th>
+        <th>Artifacts</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in claims %}
+      <tr>
+        <td>
+          <span class="badge">{{ c.get_claim_type_display }}</span><br />
+          {% if c.skill %}<strong>{{ c.skill.name }}</strong>{% else %}<span class="muted">Unmapped</span>{% endif %}
+        </td>
+        <td>
+          <strong>{{ c.title }}</strong>
+          {% if c.organization %}<div class="muted">Org: {{ c.organization }}</div>{% endif %}
+          {% if c.tech_stack %}<div class="muted">Stack: {{ c.tech_stack }}</div>{% endif %}
+          {% if c.score_text %}<div class="muted">Score: {{ c.score_text }}</div>{% endif %}
+          {% if c.description %}<div class="muted mt-12">{{ c.description }}</div>{% endif %}
+        </td>
+        <td>
+          {% if c.status == "VERIFIED" %}
+            <span class="badge badge-solid">Verified · Level {{ c.verified_level }}</span>
+          {% elif c.status == "DECLINED" %}
+            <span class="badge badge-muted">Declined</span>
+          {% else %}
+            <span class="badge">Pending</span>
+          {% endif %}
+        </td>
+        <td>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            {% if c.proof_link %}<a href="{{ c.proof_link }}" target="_blank" class="btn btn-secondary btn-sm">Proof Link</a>{% endif %}
+            {% if c.certificate_document %}<a href="{{ c.certificate_document.url }}" target="_blank" class="btn btn-secondary btn-sm">Certificate</a>{% endif %}
+            {% if c.proof_attachment %}<a href="{{ c.proof_attachment.url }}" target="_blank" class="btn btn-secondary btn-sm">Attachment</a>{% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No evidence claims available for display.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Drive Evaluations &amp; Applications</h2>
+  {% if applications %}
+  <table>
+    <thead>
+      <tr>
+        <th>Company &amp; Role</th>
+        <th>Eligibility</th>
+        <th>Readiness Score</th>
+        <th>Pipeline Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for app in applications %}
+      <tr>
+        <td><strong>{{ app.drive.company_name }}</strong> — {{ app.drive.role_title }}</td>
+        <td>{% if app.is_eligible %}Eligible{% else %}Ineligible ({{ app.eligibility_reason }}){% endif %}</td>
+        <td><strong>{{ app.readiness_score }}%</strong></td>
+        <td><span class="badge">{{ app.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No drive records found.</p>
+  {% endif %}
+</div>
+{% endblock %}

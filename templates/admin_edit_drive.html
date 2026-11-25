@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Drive & Benchmarks: {{ drive.company_name }} — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Admin Drive Configuration</div>
+    <h1 class="page-title">{{ drive.company_name }} — {{ drive.role_title }}</h1>
+    <p class="page-subtitle">Edit formal academic eligibility gates and configure multi-skill readiness benchmarks.</p>
+  </div>
+  <a href="/admin-drives/" class="btn btn-secondary">Back to Drives &amp; Grants</a>
+</div>
+
+{% if msg %}
+<div class="notice">{{ msg }}</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <h2 class="card-title">1. Drive Details &amp; Eligibility Criteria</h2>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_drive" />
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Save Drive Changes</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">2. Multi-Skill Readiness Benchmarks</h2>
+    {% if drive.skill_requirements.all %}
+    <table class="mb-20">
+      <thead>
+        <tr>
+          <th>Skill</th>
+          <th>Dimension</th>
+          <th>Min Level</th>
+          <th>Weight</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in drive.skill_requirements.all %}
+        <tr>
+          <td><strong>{{ req.skill.name }}</strong></td>
+          <td>{{ req.skill.get_dimension_display }}</td>
+          <td>Level {{ req.min_level }}</td>
+          <td>{{ req.weight }}</td>
+          <td>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="remove_skill" />
+              <input type="hidden" name="req_id" value="{{ req.id }}" />
+              <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted mb-20">No skill benchmarks configured for this drive yet.</p>
+    {% endif %}
+
+    <form method="post" class="card-surface">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_skill" />
+      <h3 class="stat-label mb-12">Add / Update Skill Benchmark</h3>
+      {% for field in skill_form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary btn-sm">Save Benchmark</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

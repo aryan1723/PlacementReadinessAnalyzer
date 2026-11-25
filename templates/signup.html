@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Student Registration — P06 Placement Readiness Analyser{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Student Onboarding</div>
+    <h1 class="page-title">Create Student Account</h1>
+    <p class="page-subtitle">Register your student profile to start tracking skill readiness and drive eligibility.</p>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2 class="card-title">Student Details</h2>
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Register Student Account</button>
+      <a href="/login/" class="btn btn-secondary">Back to Login</a>
+    </form>
+  </div>
+
+  <div class="card-surface">
+    <h2 class="card-title">How Readiness Works</h2>
+    <p class="muted mb-12">
+      1. Complete your academic profile (branch, graduation year, CGPA, backlogs, coding links, and CV).
+    </p>
+    <p class="muted mb-12">
+      2. Submit type-specific evidence claims for certifications, projects, academics, internships, and assessments.
+    </p>
+    <p class="muted">
+      3. Once faculty verifies claims, your readiness score and per-drive skill gaps update automatically.
+    </p>
+  </div>
+</div>
+{% endblock %}

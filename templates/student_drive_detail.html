@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}{{ drive.company_name }} — Drive Breakdown{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Placement Drive Evaluation</div>
+    <h1 class="page-title">{{ drive.company_name }} — {{ drive.role_title }}</h1>
+    <p class="page-subtitle">
+      {% if drive.ctc_package %}Package: {{ drive.ctc_package }} · {% endif %}
+      {% if drive.job_location %}Location: {{ drive.job_location }} · {% endif %}
+      {% if drive.application_deadline %}Deadline: {{ drive.application_deadline }}{% endif %}
+    </p>
+  </div>
+  <div>
+    <a href="/student/dashboard/" class="btn btn-secondary">Back to Dashboard</a>
+    {% if application.is_eligible and application.status == "EVALUATED" %}
+    <form method="post" action="/student/drives/{{ drive.id }}/apply/" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-primary">Submit Application</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if drive.description %}
+<div class="card-surface mb-20">
+  <h2 class="card-title">Role Overview</h2>
+  <p>{{ drive.description }}</p>
+</div>
+{% endif %}
+
+<div class="grid-2 mb-20">
+  <div class="card">
+    <h2 class="card-title">1. Formal Eligibility Gate</h2>
+    <p class="mb-12">
+      Status:
+      {% if application.is_eligible %}
+        <span class="badge badge-solid">Eligible</span>
+      {% else %}
+        <span class="badge badge-muted">Ineligible</span>
+      {% endif %}
+    </p>
+    <p class="muted mb-12">{{ application.eligibility_reason }}</p>
+    <table>
+      <tbody>
+        <tr><th>Minimum CGPA</th><td>{{ drive.min_cgpa }} (Yours: {{ profile.cgpa }})</td></tr>
+        <tr><th>Max Backlogs</th><td>{{ drive.max_backlogs }} (Yours: {{ profile.backlogs }})</td></tr>
+        <tr><th>Allowed Branches</th><td>{{ drive.allowed_branches|default:"All Branches" }} (Yours: {{ profile.branch|default:"Unset" }})</td></tr>
+        <tr><th>Graduation Year</th><td>{{ drive.graduation_year|default:"Any" }} (Yours: {{ profile.graduation_year|default:"Unset" }})</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">2. Verified Skill Readiness &amp; Gaps</h2>
+    <div class="stat-value">{{ application.readiness_score }}%</div>
+    <div class="meter-track mb-12"><div class="meter-fill" style="width: {{ application.readiness_score }}%;"></div></div>
+    <p class="muted mb-12">{{ application.gap_summary }}</p>
+
+    {% if drive.skill_requirements.all %}
+    <table>
+      <thead>
+        <tr>
+          <th>Required Skill</th>
+          <th>Dimension</th>
+          <th>Min Level</th>
+          <th>Weight</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in drive.skill_requirements.all %}
+        <tr>
+          <td><strong>{{ req.skill.name }}</strong></td>
+          <td>{{ req.skill.get_dimension_display }}</td>
+          <td>Level {{ req.min_level }}</td>
+          <td>{{ req.weight }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No specific skill benchmarks configured for this drive.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if application.applied_at %}
+<div class="card-surface">
+  <h2 class="card-title">Locked Application Snapshot ({{ application.status }})</h2>
+  <p class="muted">
+    Submitted on {{ application.applied_at }} · CGPA: {{ application.applied_cgpa }} · Backlogs: {{ application.applied_backlogs }} · Readiness Score: {{ application.applied_readiness_score }}%
+  </p>
+  <p class="muted mt-12">{{ application.applied_gap_summary }}</p>
+</div>
+{% endif %}
+{% endblock %}

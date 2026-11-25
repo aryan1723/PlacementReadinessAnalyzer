@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Student Readiness Dashboard — P06{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Student Workspace · {{ account.regno_or_id }}</div>
+    <h1 class="page-title">{{ account.name }}</h1>
+    <p class="page-subtitle">
+      Branch: {{ profile.branch|default:"Not Set" }} · Grad Year: {{ profile.graduation_year|default:"Not Set" }} · CGPA: {{ profile.cgpa }} · Backlogs: {{ profile.backlogs }}
+    </p>
+  </div>
+  <div>
+    <a href="/student/claims/" class="btn btn-primary">+ Submit Evidence Claim</a>
+    <a href="/student/profile/" class="btn btn-secondary">Edit Profile &amp; CV</a>
+  </div>
+</div>
+
+{% if applied_msg %}
+<div class="notice">Application submitted. Your current CGPA, backlogs, readiness score, and gap summary have been locked as a snapshot.</div>
+{% endif %}
+
+<div class="grid-4 mb-20">
+  <div class="card">
+    <div class="stat-label">Verified Claims</div>
+    <div class="stat-value">{{ verified_count }}</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Pending Review</div>
+    <div class="stat-value">{{ pending_count }}</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Current CGPA</div>
+    <div class="stat-value">{{ profile.cgpa }}</div>
+  </div>
+  <div class="card">
+    <div class="stat-label">Active Backlogs</div>
+    <div class="stat-value">{{ profile.backlogs }}</div>
+  </div>
+</div>
+
+<div class="card mb-20">
+  <h2 class="card-title">Verified Skill Dimension Breakdown</h2>
+  <div class="grid-4">
+    <div>
+      <div class="stat-label">Technical ({{ dimension_scores.TECHNICAL }}%)</div>
+      <div class="meter-track"><div class="meter-fill" style="width: {{ dimension_scores.TECHNICAL }}%;"></div></div>
+    </div>
+    <div>
+      <div class="stat-label">Aptitude ({{ dimension_scores.APTITUDE }}%)</div>
+      <div class="meter-track"><div class="meter-fill" style="width: {{ dimension_scores.APTITUDE }}%;"></div></div>
+    </div>
+    <div>
+      <div class="stat-label">Communication ({{ dimension_scores.COMMUNICATION }}%)</div>
+      <div class="meter-track"><div class="meter-fill" style="width: {{ dimension_scores.COMMUNICATION }}%;"></div></div>
+    </div>
+    <div>
+      <div class="stat-label">Project Depth ({{ dimension_scores.PROJECT_DEPTH }}%)</div>
+      <div class="meter-track"><div class="meter-fill" style="width: {{ dimension_scores.PROJECT_DEPTH }}%;"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-20">
+  <h2 class="card-title">Active Placement Drives — Formal Eligibility vs. Verified Readiness</h2>
+  {% if applications %}
+  <table>
+    <thead>
+      <tr>
+        <th>Company &amp; Role</th>
+        <th>Academic Eligibility Gate</th>
+        <th>Verified Readiness &amp; Skill Gaps</th>
+        <th>Pipeline Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for app in applications %}
+      <tr>
+        <td>
+          <strong>{{ app.drive.company_name }}</strong> — {{ app.drive.role_title }}<br />
+          <span class="muted">
+            {% if app.drive.ctc_package %}{{ app.drive.ctc_package }} · {% endif %}
+            {% if app.drive.job_location %}{{ app.drive.job_location }}{% endif %}
+          </span>
+        </td>
+        <td>
+          {% if app.is_eligible %}
+            <span class="badge badge-solid">Eligible</span>
+          {% else %}
+            <span class="badge badge-muted">Ineligible</span>
+          {% endif %}
+          <div class="muted mt-12">{{ app.eligibility_reason }}</div>
+        </td>
+        <td>
+          <strong>{{ app.readiness_score }}% Ready</strong>
+          <div class="meter-track" style="max-width: 180px;">
+            <div class="meter-fill" style="width: {{ app.readiness_score }}%;"></div>
+          </div>
+          <div class="muted mt-12">{{ app.gap_summary|default:"No skill benchmarks attached" }}</div>
+        </td>
+        <td>
+          <span class="badge">{{ app.status }}</span>
+          {% if app.applied_at %}
+          <div class="muted mt-12">Snapshot: {{ app.applied_readiness_score }}% · CGPA {{ app.applied_cgpa }}</div>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/student/drives/{{ app.drive.id }}/" class="btn btn-secondary btn-sm">Inspect</a>
+          {% if app.is_eligible and app.status == "EVALUATED" %}
+          <form method="post" action="/student/drives/{{ app.drive.id }}/apply/" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No active placement drives are published yet.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Faculty Preparation Guidance</h2>
+  {% if guidance_items %}
+  <table>
+    <thead>
+      <tr>
+        <th>Path Title</th>
+        <th>Target Skill</th>
+        <th>Feedback &amp; Recommended Steps</th>
+        <th>Timeline</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in guidance_items %}
+      <tr>
+        <td>
+          <strong>{{ g.path_title }}</strong><br />
+          <span class="muted">By {{ g.faculty.name }}</span>
+        </td>
+        <td>{% if g.skill %}<span class="badge">{{ g.skill.name }}</span>{% else %}<span class="muted">General</span>{% endif %}</td>
+        <td>
+          <div>{{ g.guidance_feedback }}</div>
+          {% if g.recommended_steps %}<div class="muted mt-12">{{ g.recommended_steps }}</div>{% endif %}
+        </td>
+        <td>{{ g.target_weeks }} weeks</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No faculty guidance paths assigned yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

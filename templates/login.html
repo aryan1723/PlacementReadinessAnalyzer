@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — P06 Placement Readiness Analyser{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Session Authentication</div>
+    <h1 class="page-title">Sign In</h1>
+    <p class="page-subtitle">Authenticate with your registration number or staff/admin identifier.</p>
+  </div>
+</div>
+
+{% if error %}
+<div class="notice-error">{{ error }}</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <h2 class="card-title">Account Credentials</h2>
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Sign In</button>
+    </form>
+  </div>
+
+  <div class="card-surface">
+    <h2 class="card-title">New Student Registration</h2>
+    <p class="muted mb-12">
+      Students can create an account directly to maintain an academic profile, submit skill evidence claims, track placement readiness, and apply to eligible drives.
+    </p>
+    <p class="muted mb-20">
+      Faculty, Placement Cell, Recruiter, and Admin accounts are provisioned centrally by system administrators.
+    </p>
+    <a href="/signup/" class="btn btn-secondary">Create Student Account</a>
+  </div>
+</div>
+{% endblock %}

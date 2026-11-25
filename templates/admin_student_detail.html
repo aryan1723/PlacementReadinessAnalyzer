@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Master Student Dossier: {{ student_account.regno_or_id }} — Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Master Student Dossier · {{ student_account.regno_or_id }}</div>
+    <h1 class="page-title">{{ student_account.name }}</h1>
+    <p class="page-subtitle">
+      Email: {{ student_account.email|default:"—" }} · Status: {% if student_account.is_active %}Active{% else %}Disabled{% endif %}
+    </p>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a href="/admin-panel/edit/{{ student_account.id }}/" class="btn btn-secondary">Edit Account</a>
+    <a href="/admin-panel/" class="btn btn-secondary">Back to Accounts</a>
+  </div>
+</div>
+
+{% if saved %}
+<div class="notice">Student academic profile updated and live drive evaluations synchronized.</div>
+{% endif %}
+
+<div class="card mb-20">
+  <h2 class="card-title">1. Edit Student Academic &amp; Portfolio Record</h2>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="grid-2">
+      {% for field in profile_form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Update Student Profile</button>
+  </form>
+</div>
+
+<div class="card mb-20">
+  <h2 class="card-title">2. Evidence Claims Portfolio ({{ claims|length }})</h2>
+  {% if claims %}
+  <table>
+    <thead>
+      <tr>
+        <th>Category &amp; Skill</th>
+        <th>Claim Title &amp; Details</th>
+        <th>Verification Status</th>
+        <th>Reviewer &amp; Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in claims %}
+      <tr>
+        <td>
+          <span class="badge">{{ c.get_claim_type_display }}</span><br />
+          {% if c.skill %}<strong>{{ c.skill.name }}</strong>{% else %}<span class="muted">Unmapped</span>{% endif %}
+        </td>
+        <td>
+          <strong>{{ c.title }}</strong>
+          {% if c.organization %}<div class="muted">Org: {{ c.organization }}</div>{% endif %}
+          {% if c.tech_stack %}<div class="muted">Stack: {{ c.tech_stack }}</div>{% endif %}
+          <div class="mt-12" style="display:flex; gap:6px; flex-wrap:wrap;">
+            {% if c.proof_link %}<a href="{{ c.proof_link }}" target="_blank" class="btn btn-secondary btn-sm">Link</a>{% endif %}
+            {% if c.certificate_document %}<a href="{{ c.certificate_document.url }}" target="_blank" class="btn btn-secondary btn-sm">Certificate</a>{% endif %}
+            {% if c.proof_attachment %}<a href="{{ c.proof_attachment.url }}" target="_blank" class="btn btn-secondary btn-sm">Attachment</a>{% endif %}
+          </div>
+        </td>
+        <td>
+          {% if c.status == "VERIFIED" %}
+            <span class="badge badge-solid">Verified · Lvl {{ c.verified_level }}</span>
+          {% elif c.status == "DECLINED" %}
+            <span class="badge badge-muted">Declined</span>
+          {% else %}
+            <span class="badge">Pending</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if c.verified_by %}<div>By {{ c.verified_by.name }}</div>{% endif %}
+          <div class="muted">{{ c.verification_notes|default:"—" }}</div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No evidence claims submitted by this student.</p>
+  {% endif %}
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h2 class="card-title">3. Drive Evaluations &amp; Applications ({{ applications|length }})</h2>
+    {% if applications %}
+    <table>
+      <thead>
+        <tr>
+          <th>Drive</th>
+          <th>Eligibility</th>
+          <th>Readiness</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td><strong>{{ app.drive.company_name }}</strong> — {{ app.drive.role_title }}</td>
+          <td>{% if app.is_eligible %}Eligible{% else %}Ineligible{% endif %}</td>
+          <td><strong>{{ app.readiness_score }}%</strong></td>
+          <td><span class="badge">{{ app.status }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No drive evaluations recorded.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">4. Faculty Guidance History ({{ guidance_items|length }})</h2>
+    {% if guidance_items %}
+    <table>
+      <thead>
+        <tr>
+          <th>Path</th>
+          <th>Faculty</th>
+          <th>Feedback</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in guidance_items %}
+        <tr>
+          <td><strong>{{ g.path_title }}</strong></td>
+          <td>{{ g.faculty.name }}</td>
+          <td>{{ g.guidance_feedback }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No faculty guidance paths recorded.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

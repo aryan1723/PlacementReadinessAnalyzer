@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Master Control — Drives & Grants{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">System Administration · {{ account.regno_or_id }}</div>
+    <h1 class="page-title">Placement Drives &amp; Recruiter Access Grants</h1>
+    <p class="page-subtitle">Create, edit, or delete placement drives, manage skill benchmarks, and issue or revoke recruiter cohort access grants.</p>
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <a href="/admin-panel/" class="btn btn-secondary">Accounts &amp; Dossiers</a>
+    <a href="/admin-skills/" class="btn btn-secondary">Skill Taxonomy</a>
+  </div>
+</div>
+
+{% if msg %}
+<div class="notice">{{ msg }}</div>
+{% endif %}
+
+<div class="grid-2 mb-20">
+  <div class="card">
+    <h2 class="card-title">Create Placement Drive</h2>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="drive" />
+      {% for field in drive_form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Create Placement Drive</button>
+    </form>
+  </div>
+
+  <div class="card-surface">
+    <h2 class="card-title">Grant Recruiter Access to Drive</h2>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="form_type" value="grant" />
+      {% for field in grant_form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Save Recruiter Grant</button>
+    </form>
+  </div>
+</div>
+
+<div class="card mb-20">
+  <h2 class="card-title">All Placement Drives ({{ drives|length }})</h2>
+  {% if drives %}
+  <table>
+    <thead>
+      <tr>
+        <th>Company &amp; Role</th>
+        <th>Eligibility Criteria</th>
+        <th>Skill Benchmarks</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in drives %}
+      <tr>
+        <td>
+          <strong>{{ d.company_name }}</strong> — {{ d.role_title }}<br />
+          <span class="muted">
+            {% if d.ctc_package %}{{ d.ctc_package }} · {% endif %}
+            {% if d.job_location %}{{ d.job_location }}{% endif %}
+          </span>
+        </td>
+        <td>
+          <div>Min CGPA: <strong>{{ d.min_cgpa }}</strong> · Max Backlogs: <strong>{{ d.max_backlogs }}</strong></div>
+          <div class="muted">Branches: {{ d.allowed_branches|default:"All" }}{% if d.graduation_year %} · Batch {{ d.graduation_year }}{% endif %}</div>
+        </td>
+        <td>
+          {% if d.skill_requirements.all %}
+            {% for req in d.skill_requirements.all %}
+              <div style="margin-bottom:4px;">
+                <span class="badge">{{ req.skill.name }} · Lvl {{ req.min_level }}+ (W:{{ req.weight }})</span>
+              </div>
+            {% endfor %}
+          {% else %}
+            <span class="muted">None attached</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if d.is_active %}
+            <span class="badge badge-solid">Active</span>
+          {% else %}
+            <span class="badge badge-muted">Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <a href="/admin-drives/edit/{{ d.id }}/" class="btn btn-primary btn-sm">Edit &amp; Benchmarks</a>
+            <a href="/admin-drives/delete/{{ d.id }}/" class="btn btn-secondary btn-sm" onclick="return confirm('Delete drive {{ d.company_name }}?');">Delete</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No placement drives created yet.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Active &amp; Historical Recruiter Grants ({{ grants|length }})</h2>
+  {% if grants %}
+  <table>
+    <thead>
+      <tr>
+        <th>Recruiter</th>
+        <th>Placement Drive</th>
+        <th>Branch Scope</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in grants %}
+      <tr>
+        <td>
+          <strong>{{ g.recruiter.name }}</strong><br />
+          <span class="muted">{{ g.recruiter.regno_or_id }}</span>
+        </td>
+        <td>{{ g.drive.company_name }} — {{ g.drive.role_title }}</td>
+        <td>{{ g.cohort_branch|default:"All Eligible Branches" }}</td>
+        <td>
+          {% if g.is_active %}
+            <span class="badge badge-solid">Active</span>
+          {% else %}
+            <span class="badge badge-muted">Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/admin-grants/delete/{{ g.id }}/" class="btn btn-secondary btn-sm" onclick="return confirm('Revoke this recruiter grant?');">Revoke</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No recruiter grants configured yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

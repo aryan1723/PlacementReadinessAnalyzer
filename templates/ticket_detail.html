@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{{ ticket.ticket_code }} — Help Desk Thread{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">{{ ticket.ticket_code }} · Target: {{ ticket.get_target_role_display }}</div>
+    <h1 class="page-title">{{ ticket.subject }}</h1>
+    <p class="page-subtitle">
+      Raised by {{ ticket.created_by.name }} ({{ ticket.created_by.regno_or_id }} · {{ ticket.created_by.role }}) on {{ ticket.created_at|date:"M d, Y H:i" }}
+      {% if ticket.related_drive %} · Related Drive: {{ ticket.related_drive.company_name }} — {{ ticket.related_drive.role_title }}{% endif %}
+    </p>
+  </div>
+  <a href="/helpdesk/" class="btn btn-secondary">Back to Help Desk</a>
+</div>
+
+{% if msg %}
+<div class="notice">{{ msg }}</div>
+{% endif %}
+
+<div class="grid-2 mb-20">
+  <div class="card-surface">
+    <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
+      {% if ticket.priority == "URGENT" %}
+        <span class="badge badge-solid">Urgent Priority</span>
+      {% else %}
+        <span class="badge badge-muted">Normal Priority</span>
+      {% endif %}
+      <span class="badge">{{ ticket.get_status_display }}</span>
+    </div>
+    <h2 class="card-title">Issue Description</h2>
+    <p style="white-space: pre-line;">{{ ticket.description }}</p>
+  </div>
+
+  {% if can_change_status %}
+  <div class="card">
+    <h2 class="card-title">Ticket Lifecycle Status</h2>
+    <p class="muted mb-12">Update the resolution state of this ticket.</p>
+    <form method="post" style="display:flex; gap:10px; align-items:flex-end;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="status" />
+      <div style="flex:1;">
+        <label for="{{ status_form.status.id_for_label }}">Status</label>
+        {{ status_form.status }}
+      </div>
+      <button type="submit" class="btn btn-primary">Update Status</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card mb-20">
+  <h2 class="card-title">Conversation Thread ({{ replies|length }})</h2>
+  {% if replies %}
+    {% for r in replies %}
+    <div class="card-surface mb-12">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <strong>{{ r.sender.name }} ({{ r.sender.regno_or_id }} · {{ r.sender.role }})</strong>
+        <span class="muted">{{ r.created_at|date:"M d, Y H:i" }}</span>
+      </div>
+      <p style="white-space: pre-line;">{{ r.message }}</p>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">No replies posted yet.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Post a Reply</h2>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="reply" />
+    {% for field in reply_form %}
+    <div class="form-group">
+      <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+      {% if field.errors %}
+      <ul class="errorlist">
+        {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Send Reply</button>
+  </form>
+</div>
+{% endblock %}

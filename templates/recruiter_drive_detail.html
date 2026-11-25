@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}{{ drive.company_name }} — Recruiter Cohort{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Granted Drive Cohort · {{ grant.cohort_branch|default:"All Eligible Branches" }}</div>
+    <h1 class="page-title">{{ drive.company_name }} — {{ drive.role_title }}</h1>
+    <p class="page-subtitle">
+      Min CGPA: {{ drive.min_cgpa }} · Max Backlogs: {{ drive.max_backlogs }}
+      {% if drive.ctc_package %} · {{ drive.ctc_package }}{% endif %}
+      {% if drive.job_location %} · {{ drive.job_location }}{% endif %}
+    </p>
+  </div>
+  <a href="/recruiter/dashboard/" class="btn btn-secondary">Back to Granted Drives</a>
+</div>
+
+{% if msg %}
+<div class="notice">{{ msg }}</div>
+{% endif %}
+
+<div class="card-surface mb-20">
+  <h2 class="card-title">Drive Skill Benchmarks</h2>
+  {% if drive.skill_requirements.all %}
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    {% for req in drive.skill_requirements.all %}
+      <span class="badge">{{ req.skill.name }} ({{ req.skill.get_dimension_display }}) · Min Level {{ req.min_level }} · Weight {{ req.weight }}</span>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">No specific skill benchmarks attached to this drive.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Eligible Student Cohort ({{ applications|length }})</h2>
+  {% if applications %}
+  <table>
+    <thead>
+      <tr>
+        <th>Candidate</th>
+        <th>Academic Metrics</th>
+        <th>Verified Readiness &amp; Skill Gaps</th>
+        <th>Pipeline Stage</th>
+        <th>Profile</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for app in applications %}
+      <tr>
+        <td>
+          <strong>{{ app.student.user.regno_or_id }}</strong> — {{ app.student.user.name }}<br />
+          <span class="muted">{{ app.student.branch|default:"—" }} · Batch {{ app.student.graduation_year|default:"—" }}</span>
+        </td>
+        <td>
+          <div>CGPA: <strong>{{ app.student.cgpa }}</strong></div>
+          <div class="muted">Backlogs: {{ app.student.backlogs }}</div>
+          {% if app.applied_at %}
+            <div class="muted mt-12">Applied Snapshot: {{ app.applied_cgpa }} CGPA</div>
+          {% endif %}
+        </td>
+        <td>
+          <strong>{{ app.readiness_score }}% Ready</strong>
+          <div class="meter-track" style="max-width:160px;">
+            <div class="meter-fill" style="width: {{ app.readiness_score }}%;"></div>
+          </div>
+          <div class="muted mt-12">{{ app.gap_summary }}</div>
+        </td>
+        <td>
+          <form method="post" style="display:flex; gap:6px; align-items:center;">
+            {% csrf_token %}
+            <input type="hidden" name="app_id" value="{{ app.id }}" />
+            <select name="status" style="width:auto;">
+              {% for code, label in status_choices %}
+                <option value="{{ code }}" {% if app.status == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-secondary btn-sm">Update</button>
+          </form>
+        </td>
+        <td>
+          <a href="/recruiter/drives/{{ drive.id }}/student/{{ app.student.user.regno_or_id }}/" class="btn btn-primary btn-sm">Candidate Dossier</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No eligible students currently match this drive's cohort criteria.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Recruiter Granted Drives — P06{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Recruiter Workspace · {{ account.regno_or_id }}</div>
+    <h1 class="page-title">Granted Placement Drives</h1>
+    <p class="page-subtitle">Review eligible student cohorts, verified skill benchmarks, and candidate readiness profiles across drives assigned to your account.</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2 class="card-title">Assigned Drives ({{ grant_rows|length }})</h2>
+  {% if grant_rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>Company &amp; Role</th>
+        <th>Cohort Scope</th>
+        <th>Skill Benchmarks</th>
+        <th>Eligible &amp; Applied</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in grant_rows %}
+      <tr>
+        <td>
+          <strong><a href="/recruiter/drives/{{ row.grant.drive.id }}/">{{ row.grant.drive.company_name }}</a></strong><br />
+          <span>{{ row.grant.drive.role_title }}</span>
+          <div class="muted">
+            {% if row.grant.drive.ctc_package %}{{ row.grant.drive.ctc_package }} · {% endif %}
+            {% if row.grant.drive.job_location %}{{ row.grant.drive.job_location }}{% endif %}
+          </div>
+        </td>
+        <td>
+          <div>Branch Scope: <strong>{{ row.grant.cohort_branch|default:"All Eligible Branches" }}</strong></div>
+          <div class="muted">Min CGPA {{ row.grant.drive.min_cgpa }} · Max Backlogs {{ row.grant.drive.max_backlogs }}</div>
+        </td>
+        <td>
+          {% if row.grant.drive.skill_requirements.all %}
+            {% for req in row.grant.drive.skill_requirements.all %}
+              <div style="margin-bottom:4px;">
+                <span class="badge">{{ req.skill.name }} · Lvl {{ req.min_level }}+</span>
+              </div>
+            {% endfor %}
+          {% else %}
+            <span class="muted">General readiness evaluation</span>
+          {% endif %}
+        </td>
+        <td>
+          <div>Eligible Cohort: <strong>{{ row.eligible_count }}</strong></div>
+          <div class="muted">Submitted Applications: {{ row.applied_count }}</div>
+        </td>
+        <td>
+          <a href="/recruiter/drives/{{ row.grant.drive.id }}/" class="btn btn-primary btn-sm">Inspect Cohort</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No placement drives have been granted to your recruiter account yet. Contact the Placement Cell or System Admin via Help Desk if access is pending.</p>
+  {% endif %}
+</div>
+{% endblock %}

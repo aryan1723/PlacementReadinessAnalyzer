@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Claims & Achievements Studio — P06{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Evidence Portfolio · {{ account.regno_or_id }}</div>
+    <h1 class="page-title">Achievements &amp; Evidence Claims</h1>
+    <p class="page-subtitle">Submit multiple evidence claims across certifications, projects, academics, internships, and assessments. New claims start as Pending until verified by faculty.</p>
+  </div>
+  <a href="/student/dashboard/" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+
+{% if msg %}
+<div class="notice">{{ msg }}</div>
+{% endif %}
+
+<div class="card mb-20">
+  <h2 class="card-title">1. Select Achievement Type to Submit</h2>
+  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+    {% for code, label in claim_types %}
+      <a href="/student/claims/?type={{ code }}"
+         class="btn {% if selected_type == code %}btn-primary{% else %}btn-secondary{% endif %}">
+        + {{ label }}
+      </a>
+    {% endfor %}
+  </div>
+
+  {% if selected_type and form %}
+  <div class="card-surface mt-20">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <h3 class="card-title" style="margin-bottom: 0;">New {{ selected_type }} Claim</h3>
+      <a href="/student/claims/" class="btn btn-secondary btn-sm">Cancel</a>
+    </div>
+
+    <form method="post" action="/student/claims/?type={{ selected_type }}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="grid-2">
+        {% for field in form %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}
+          <ul class="errorlist">
+            {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="mt-12">
+        <button type="submit" class="btn btn-primary">Submit {{ selected_type }} Claim (Starts as Pending)</button>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+    <h2 class="card-title" style="margin-bottom: 0;">2. Submitted Evidence Claims ({{ claims|length }})</h2>
+    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+      <a href="/student/claims/" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-secondary{% endif %}">All</a>
+      <a href="/student/claims/?status=PENDING" class="btn btn-sm {% if status_filter == 'PENDING' %}btn-primary{% else %}btn-secondary{% endif %}">Pending</a>
+      <a href="/student/claims/?status=VERIFIED" class="btn btn-sm {% if status_filter == 'VERIFIED' %}btn-primary{% else %}btn-secondary{% endif %}">Verified</a>
+      <a href="/student/claims/?status=DECLINED" class="btn btn-sm {% if status_filter == 'DECLINED' %}btn-primary{% else %}btn-secondary{% endif %}">Declined</a>
+    </div>
+  </div>
+
+  {% if claims %}
+  <table>
+    <thead>
+      <tr>
+        <th>Category &amp; Skill</th>
+        <th>Claim Details &amp; Proof</th>
+        <th>Verification Status</th>
+        <th>Faculty Notes &amp; Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in claims %}
+      <tr>
+        <td>
+          <span class="badge">{{ c.get_claim_type_display }}</span><br />
+          {% if c.skill %}
+            <strong class="mt-12" style="display:inline-block;">{{ c.skill.name }}</strong>
+          {% else %}
+            <span class="muted">Unmapped Skill</span>
+          {% endif %}
+        </td>
+        <td>
+          <strong>{{ c.title }}</strong>
+          {% if c.organization %}<div class="muted">Org: {{ c.organization }}</div>{% endif %}
+          {% if c.project_role %}<div class="muted">Role: {{ c.project_role }}</div>{% endif %}
+          {% if c.tech_stack %}<div class="muted">Stack: {{ c.tech_stack }}</div>{% endif %}
+          {% if c.credential_id %}<div class="muted">Credential ID: {{ c.credential_id }}</div>{% endif %}
+          {% if c.academic_result or c.academic_grade %}
+            <div class="muted">Result: {{ c.academic_result }} {{ c.academic_grade }}</div>
+          {% endif %}
+          {% if c.score_text %}<div class="muted">Score / Rank: {{ c.score_text }}</div>{% endif %}
+          {% if c.description %}<div class="muted mt-12">{{ c.description }}</div>{% endif %}
+          <div class="mt-12" style="display:flex; gap:8px; flex-wrap:wrap;">
+            {% if c.proof_link %}
+              <a href="{{ c.proof_link }}" target="_blank" class="btn btn-secondary btn-sm">Proof Link</a>
+            {% endif %}
+            {% if c.certificate_document %}
+              <a href="{{ c.certificate_document.url }}" target="_blank" class="btn btn-secondary btn-sm">Certificate File</a>
+            {% endif %}
+            {% if c.proof_attachment %}
+              <a href="{{ c.proof_attachment.url }}" target="_blank" class="btn btn-secondary btn-sm">Attachment</a>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          {% if c.status == "VERIFIED" %}
+            <span class="badge badge-solid">Verified · Level {{ c.verified_level }}</span>
+          {% elif c.status == "DECLINED" %}
+            <span class="badge badge-muted">Declined</span>
+          {% else %}
+            <span class="badge">Pending Review</span>
+          {% endif %}
+          {% if c.verified_by %}
+            <div class="muted mt-12">Reviewed by {{ c.verified_by.name }}</div>
+          {% endif %}
+        </td>
+        <td>
+          {% if c.verification_notes %}
+            <div>{{ c.verification_notes }}</div>
+          {% else %}
+            <span class="muted">No review remarks yet.</span>
+          {% endif %}
+          {% if c.status == "PENDING" %}
+          <div class="mt-12">
+            <a href="/student/claims/delete/{{ c.id }}/" class="btn btn-secondary btn-sm" onclick="return confirm('Withdraw this pending claim?');">Withdraw</a>
+          </div>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No evidence claims found for the selected filter. Choose a category above to add your first claim.</p>
+  {% endif %}
+</div>
+{% endblock %}

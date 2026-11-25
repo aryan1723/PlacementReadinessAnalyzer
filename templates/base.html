@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}P06 — Placement Skill Matcher & Readiness Analyser{% endblock %}</title>
+  <style>
+    :root {
+      --bg-canvas: #FFFFFF;
+      --bg-surface: #FAFAFA;
+      --text-ink: #0F0F0F;
+      --text-muted: #5C5C5C;
+      --border-hairline: #E5E5E5;
+      --active-black: #141414;
+      --ease-editorial: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: var(--text-ink);
+      text-decoration: none;
+      transition: opacity 180ms var(--ease-editorial), background-color 180ms var(--ease-editorial);
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--border-hairline);
+      background-color: var(--bg-canvas);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .brand-code {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border: 1px solid var(--text-ink);
+      border-radius: 2px;
+    }
+
+    .brand-title {
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .nav-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      padding: 6px 10px;
+      border: 1px solid transparent;
+      border-radius: 2px;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      color: var(--text-ink);
+      border-color: var(--border-hairline);
+      background-color: var(--bg-surface);
+    }
+
+    .user-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .role-pill {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-ink);
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      padding: 2px 7px;
+      border-radius: 2px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px 24px 64px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border-hairline);
+    }
+
+    .page-kicker {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background-color: var(--bg-canvas);
+      border: 1px solid var(--border-hairline);
+      border-radius: 2px;
+      padding: 20px;
+    }
+
+    .card-surface {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-hairline);
+      border-radius: 2px;
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 12px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-top: 4px;
+    }
+
+    .notice {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--text-ink);
+      border-radius: 2px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+
+    .notice-error {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--text-ink);
+      border-left-width: 3px;
+      border-radius: 2px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-ink);
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="url"],
+    input[type="date"],
+    input[type="file"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      color: var(--text-ink);
+      background-color: var(--bg-canvas);
+      border: 1px solid var(--border-hairline);
+      border-radius: 2px;
+      transition: border-color 180ms var(--ease-editorial);
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--text-ink);
+    }
+
+    .helptext {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+
+    .errorlist {
+      list-style: none;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-ink);
+      margin-top: 4px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      border-radius: 2px;
+      border: 1px solid var(--text-ink);
+      cursor: pointer;
+      transition: background-color 180ms var(--ease-editorial), color 180ms var(--ease-editorial);
+    }
+
+    .btn-primary {
+      background-color: var(--active-black);
+      color: var(--bg-canvas);
+    }
+
+    .btn-primary:hover {
+      background-color: #2B2B2B;
+    }
+
+    .btn-secondary {
+      background-color: var(--bg-canvas);
+      color: var(--text-ink);
+      border-color: var(--border-hairline);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-ink);
+      background-color: var(--bg-surface);
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-hairline);
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background-color: var(--bg-surface);
+    }
+
+    tr:hover td {
+      background-color: var(--bg-surface);
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 2px;
+      border: 1px solid var(--border-hairline);
+      background-color: var(--bg-surface);
+      color: var(--text-ink);
+    }
+
+    .badge-solid {
+      background-color: var(--active-black);
+      color: var(--bg-canvas);
+      border-color: var(--active-black);
+    }
+
+    .badge-muted {
+      color: var(--text-muted);
+      background-color: var(--bg-canvas);
+    }
+
+    .meter-track {
+      width: 100%;
+      height: 6px;
+      background-color: var(--border-hairline);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .meter-fill {
+      height: 100%;
+      background-color: var(--active-black);
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    .mt-12 { margin-top: 12px; }
+    .mt-20 { margin-top: 20px; }
+    .mt-28 { margin-top: 28px; }
+    .mb-12 { margin-bottom: 12px; }
+    .mb-20 { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-code">P06</span>
+        <span class="brand-title">Placement Skill Matcher &amp; Readiness Analyser</span>
+      </div>
+
+      {% if account %}
+      <nav class="nav-links">
+        {% if account.role == "STUDENT" %}
+          <a href="/student/dashboard/" class="nav-link">Readiness Dashboard</a>
+          <a href="/student/claims/" class="nav-link">Claims &amp; Achievements</a>
+          <a href="/student/profile/" class="nav-link">Profile &amp; CV</a>
+        {% elif account.role == "FACULTY" %}
+          <a href="/faculty/dashboard/" class="nav-link">Verification &amp; Guidance</a>
+        {% elif account.role == "PLACEMENT_CELL" %}
+          <a href="/placement/dashboard/" class="nav-link">Placement Drives</a>
+        {% elif account.role == "RECRUITER" %}
+          <a href="/recruiter/dashboard/" class="nav-link">Granted Drives</a>
+        {% elif account.role == "ADMIN" %}
+          <a href="/admin-panel/" class="nav-link">Accounts &amp; Dossiers</a>
+          <a href="/admin-drives/" class="nav-link">Drives &amp; Grants</a>
+          <a href="/admin-skills/" class="nav-link">Skill Taxonomy</a>
+        {% endif %}
+        <a href="/helpdesk/" class="nav-link">Help Desk</a>
+      </nav>
+
+      <div class="user-meta">
+        <span>{{ account.name }} ({{ account.regno_or_id }})</span>
+        <span class="role-pill">{{ account.role }}</span>
+        <a href="/logout/" class="btn btn-secondary btn-sm">Logout</a>
+      </div>
+      {% else %}
+      <nav class="nav-links">
+        <a href="/login/" class="nav-link">Login</a>
+        <a href="/signup/" class="nav-link">Student Signup</a>
+      </nav>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

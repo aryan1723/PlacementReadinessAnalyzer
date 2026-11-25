@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Drive — {{ drive.company_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Placement Drive Configuration</div>
+    <h1 class="page-title">Edit {{ drive.company_name }} — {{ drive.role_title }}</h1>
+    <p class="page-subtitle">Updating eligibility criteria automatically recalculates live student eligibility across the cohort.</p>
+  </div>
+  <a href="/placement/drives/{{ drive.id }}/" class="btn btn-secondary">Back to Drive Command</a>
+</div>
+
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="grid-2">
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Save Drive Changes</button>
+  </form>
+</div>
+{% endblock %}

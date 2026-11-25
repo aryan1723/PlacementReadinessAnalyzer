@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}{{ drive.company_name }} — Drive Command{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Placement Drive Command</div>
+    <h1 class="page-title">{{ drive.company_name }} — {{ drive.role_title }}</h1>
+    <p class="page-subtitle">
+      Min CGPA: {{ drive.min_cgpa }} · Max Backlogs: {{ drive.max_backlogs }} · Branches: {{ drive.allowed_branches|default:"All" }}
+      {% if drive.graduation_year %} · Grad Year: {{ drive.graduation_year }}{% endif %}
+    </p>
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <a href="/placement/drives/{{ drive.id }}/edit/" class="btn btn-secondary">Edit Drive Criteria</a>
+    <a href="/placement/dashboard/" class="btn btn-secondary">All Drives</a>
+  </div>
+</div>
+
+{% if msg %}
+<div class="notice">{{ msg }}</div>
+{% endif %}
+
+<div class="grid-2 mb-20">
+  <div class="card">
+    <h2 class="card-title">1. Multi-Skill Readiness Benchmarks</h2>
+    {% if drive.skill_requirements.all %}
+    <table class="mb-12">
+      <thead>
+        <tr>
+          <th>Skill</th>
+          <th>Dimension</th>
+          <th>Min Level</th>
+          <th>Weight</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in drive.skill_requirements.all %}
+        <tr>
+          <td><strong>{{ req.skill.name }}</strong></td>
+          <td>{{ req.skill.get_dimension_display }}</td>
+          <td>Level {{ req.min_level }}</td>
+          <td>{{ req.weight }}</td>
+          <td>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="remove_skill" />
+              <input type="hidden" name="req_id" value="{{ req.id }}" />
+              <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted mb-12">No skill benchmarks attached yet. Add one or more required skills below.</p>
+    {% endif %}
+
+    <form method="post" class="card-surface">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_skill" />
+      <h3 class="stat-label mb-12">Add / Update Skill Benchmark</h3>
+      {% for field in skill_form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary btn-sm">Save Benchmark</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">2. Associated Recruiters &amp; Cohort Grants</h2>
+    {% if grants %}
+    <table class="mb-12">
+      <thead>
+        <tr>
+          <th>Recruiter</th>
+          <th>Branch Scope</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in grants %}
+        <tr>
+          <td>
+            <strong>{{ g.recruiter.name }}</strong><br />
+            <span class="muted">{{ g.recruiter.regno_or_id }}</span>
+          </td>
+          <td>{{ g.cohort_branch|default:"All Eligible Branches" }}</td>
+          <td>{% if g.is_active %}<span class="badge badge-solid">Active</span>{% else %}<span class="badge badge-muted">Inactive</span>{% endif %}</td>
+          <td>
+            <form method="post" style="display:inline;">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="remove_grant" />
+              <input type="hidden" name="grant_id" value="{{ g.id }}" />
+              <button type="submit" class="btn btn-secondary btn-sm">Revoke</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted mb-12">No recruiters granted access to this drive yet.</p>
+    {% endif %}
+
+    <form method="post" class="card-surface">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_grant" />
+      <h3 class="stat-label mb-12">Grant Recruiter Access to Drive</h3>
+      {% for field in grant_form %}
+        {% if field.name != "drive" %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+        </div>
+        {% else %}
+          <input type="hidden" name="drive" value="{{ drive.id }}" />
+        {% endif %}
+      {% endfor %}
+      <button type="submit" class="btn btn-primary btn-sm">Attach Recruiter</button>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+    <h2 class="card-title" style="margin-bottom:0;">
+      3. Student Cohort ({% if show_all %}All Students{% else %}Eligible Students Only{% endif %} · {{ applications|length }})
+    </h2>
+    <div style="display:flex; gap:6px;">
+      <a href="/placement/drives/{{ drive.id }}/" class="btn btn-sm {% if not show_all %}btn-primary{% else %}btn-secondary{% endif %}">Eligible Only</a>
+      <a href="/placement/drives/{{ drive.id }}/?show=all" class="btn btn-sm {% if show_all %}btn-primary{% else %}btn-secondary{% endif %}">Show All Students</a>
+    </div>
+  </div>
+
+  {% if applications %}
+  <table>
+    <thead>
+      <tr>
+        <th>Student</th>
+        <th>Academic Gate</th>
+        <th>Verified Readiness &amp; Gaps</th>
+        <th>Pipeline Stage</th>
+        <th>Profile</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for app in applications %}
+      <tr>
+        <td>
+          <strong>{{ app.student.user.regno_or_id }}</strong> — {{ app.student.user.name }}<br />
+          <span class="muted">{{ app.student.branch|default:"Unset" }} · CGPA {{ app.student.cgpa }} · Backlogs {{ app.student.backlogs }}</span>
+        </td>
+        <td>
+          {% if app.is_eligible %}
+            <span class="badge badge-solid">Eligible</span>
+          {% else %}
+            <span class="badge badge-muted">Ineligible</span>
+          {% endif %}
+          <div class="muted mt-12">{{ app.eligibility_reason }}</div>
+        </td>
+        <td>
+          <strong>{{ app.readiness_score }}% Ready</strong>
+          <div class="meter-track" style="max-width:160px;">
+            <div class="meter-fill" style="width: {{ app.readiness_score }}%;"></div>
+          </div>
+          <div class="muted mt-12">{{ app.gap_summary }}</div>
+          {% if app.applied_at %}
+            <div class="muted mt-12"><strong>Locked Snapshot:</strong> {{ app.applied_readiness_score }}% · CGPA {{ app.applied_cgpa }}</div>
+          {% endif %}
+        </td>
+        <td>
+          <form method="post" style="display:flex; gap:6px; align-items:center;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_status" />
+            <input type="hidden" name="app_id" value="{{ app.id }}" />
+            <select name="status" style="width:auto;">
+              {% for code, label in status_choices %}
+                <option value="{{ code }}" {% if app.status == code %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-secondary btn-sm">Set</button>
+          </form>
+        </td>
+        <td>
+          <a href="/placement/student/{{ app.student.user.regno_or_id }}/?next=/placement/drives/{{ drive.id }}/" class="btn btn-primary btn-sm">View Profile</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No students match this cohort filter.</p>
+  {% endif %}
+</div>
+{% endblock %}

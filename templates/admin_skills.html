@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Master Control — Skill Taxonomy{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">System Administration · {{ account.regno_or_id }}</div>
+    <h1 class="page-title">Canonical Skill Taxonomy</h1>
+    <p class="page-subtitle">Define normalized skills across Technical, Aptitude, Communication, and Project Depth dimensions used for student evidence claims and drive benchmarks.</p>
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <a href="/admin-panel/" class="btn btn-secondary">Accounts &amp; Dossiers</a>
+    <a href="/admin-drives/" class="btn btn-secondary">Drives &amp; Grants</a>
+  </div>
+</div>
+
+{% if msg %}
+<div class="notice">{{ msg }}</div>
+{% endif %}
+
+<div class="grid-2">
+  <div class="card">
+    <h2 class="card-title">{% if instance %}Edit Skill: {{ instance.name }}{% else %}Add Canonical Skill{% endif %}</h2>
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <div style="display:flex; gap:8px;">
+        <button type="submit" class="btn btn-primary">{% if instance %}Update Skill{% else %}Add Skill{% endif %}</button>
+        {% if instance %}
+        <a href="/admin-skills/" class="btn btn-secondary">Cancel</a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">Registered Skills ({{ skills|length }})</h2>
+    {% if skills %}
+    <table>
+      <thead>
+        <tr>
+          <th>Skill Name</th>
+          <th>Dimension</th>
+          <th>Description</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in skills %}
+        <tr>
+          <td><strong>{{ s.name }}</strong></td>
+          <td><span class="badge">{{ s.get_dimension_display }}</span></td>
+          <td class="muted">{{ s.description|default:"—" }}</td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <a href="/admin-skills/?edit={{ s.id }}" class="btn btn-secondary btn-sm">Edit</a>
+              <a href="/admin-skills/?delete={{ s.id }}" class="btn btn-secondary btn-sm" onclick="return confirm('Delete skill {{ s.name }}?');">Delete</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No skills in the taxonomy yet. Add your first canonical skill on the left.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

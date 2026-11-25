@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Placement Cell Command — P06{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Placement Cell Operations · {{ account.regno_or_id }}</div>
+    <h1 class="page-title">Placement Drives &amp; Cohort Readiness</h1>
+    <p class="page-subtitle">Publish placement drives, attach multi-skill benchmarks, grant recruiter access, and inspect eligible student cohorts.</p>
+  </div>
+</div>
+
+{% if msg %}
+<div class="notice">{{ msg }}</div>
+{% endif %}
+
+<div class="card mb-20">
+  <h2 class="card-title">Published Placement Drives ({{ drive_rows|length }})</h2>
+  {% if drive_rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>Company &amp; Role</th>
+        <th>Academic Eligibility Gate</th>
+        <th>Skill Benchmarks</th>
+        <th>Cohort &amp; Recruiters</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in drive_rows %}
+      <tr>
+        <td>
+          <strong><a href="/placement/drives/{{ row.drive.id }}/">{{ row.drive.company_name }}</a></strong><br />
+          <span>{{ row.drive.role_title }}</span>
+          <div class="muted">
+            {% if row.drive.ctc_package %}{{ row.drive.ctc_package }} · {% endif %}
+            {% if row.drive.job_location %}{{ row.drive.job_location }}{% endif %}
+          </div>
+          <div class="mt-12">
+            {% if row.drive.is_active %}
+              <span class="badge badge-solid">Active</span>
+            {% else %}
+              <span class="badge badge-muted">Closed</span>
+            {% endif %}
+          </div>
+        </td>
+        <td>
+          <div>Min CGPA: <strong>{{ row.drive.min_cgpa }}</strong></div>
+          <div>Max Backlogs: <strong>{{ row.drive.max_backlogs }}</strong></div>
+          <div class="muted">Branches: {{ row.drive.allowed_branches|default:"All" }}</div>
+          {% if row.drive.graduation_year %}<div class="muted">Batch: {{ row.drive.graduation_year }}</div>{% endif %}
+        </td>
+        <td>
+          {% if row.drive.skill_requirements.all %}
+            {% for req in row.drive.skill_requirements.all %}
+              <div style="margin-bottom:4px;">
+                <span class="badge">{{ req.skill.name }} · Lvl {{ req.min_level }}+ (W:{{ req.weight }})</span>
+              </div>
+            {% endfor %}
+          {% else %}
+            <span class="muted">No skill benchmarks yet</span>
+          {% endif %}
+        </td>
+        <td>
+          <div>Eligible: <strong>{{ row.eligible_count }}</strong> · Applied: <strong>{{ row.applied_count }}</strong></div>
+          <div class="muted">Attached Recruiters: {{ row.recruiter_count }}</div>
+        </td>
+        <td>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <a href="/placement/drives/{{ row.drive.id }}/" class="btn btn-primary btn-sm">Open Drive</a>
+            <a href="/placement/drives/{{ row.drive.id }}/edit/" class="btn btn-secondary btn-sm">Edit</a>
+            <a href="/placement/drives/{{ row.drive.id }}/delete/" class="btn btn-secondary btn-sm" onclick="return confirm('Delete this placement drive and all its evaluations?');">Delete</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No placement drives created yet. Use the form below to publish the first drive.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Create New Placement Drive</h2>
+  <form method="post">
+    {% csrf_token %}
+    <div class="grid-2">
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary">Publish Placement Drive</button>
+  </form>
+</div>
+{% endblock %}

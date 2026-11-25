@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Student Profile & CV — P06{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Academic &amp; Portfolio Record · {{ account.regno_or_id }}</div>
+    <h1 class="page-title">Profile, Coding Links &amp; CV</h1>
+    <p class="page-subtitle">Updating CGPA, backlogs, branch, or graduation year automatically recalculates your formal drive eligibility.</p>
+  </div>
+  <a href="/student/dashboard/" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+
+{% if welcome %}
+<div class="notice">Welcome, {{ account.name }}. Complete your academic credentials and CV below to evaluate drive eligibility.</div>
+{% endif %}
+
+{% if saved %}
+<div class="notice">Profile saved and live placement drive eligibility synchronized.</div>
+{% endif %}
+
+<div class="card">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="grid-2">
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="helptext">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mt-12">
+      <button type="submit" class="btn btn-primary">Save Profile &amp; Sync Eligibility</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

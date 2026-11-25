@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Cross-Department Help Desk — P06{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Cross-Role Support &amp; Escalation · {{ account.regno_or_id }}</div>
+    <h1 class="page-title">Help Desk &amp; Ticketing</h1>
+    <p class="page-subtitle">Raise support tickets to Placement Cell, Faculty, Recruiters, or System Admin, and respond to incoming department queues.</p>
+  </div>
+  <div style="display:flex; gap:6px; flex-wrap:wrap;">
+    <a href="/helpdesk/" class="btn btn-sm {% if not status_filter %}btn-primary{% else %}btn-secondary{% endif %}">All</a>
+    {% for code, label in status_choices %}
+      <a href="/helpdesk/?status={{ code }}" class="btn btn-sm {% if status_filter == code %}btn-primary{% else %}btn-secondary{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+{% if msg %}
+<div class="notice">{{ msg }}</div>
+{% endif %}
+
+<div class="grid-2 mb-20">
+  <div class="card">
+    <h2 class="card-title">Raise New Support Ticket</h2>
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Submit Ticket</button>
+    </form>
+  </div>
+
+  <div class="card-surface">
+    <h2 class="card-title">Escalation Routing Guidelines</h2>
+    <p class="muted mb-12">
+      <strong>Placement Cell:</strong> Drive eligibility queries, application snapshot disputes, deadline extensions, and interview scheduling.
+    </p>
+    <p class="muted mb-12">
+      <strong>Faculty:</strong> Evidence claim review delays, proficiency level calibration, and preparation guidance requests.
+    </p>
+    <p class="muted mb-12">
+      <strong>Recruiter:</strong> Role-specific technical expectations, assessment clarifications, and cohort feedback.
+    </p>
+    <p class="muted">
+      <strong>System Admin:</strong> Account access restoration, role provisioning, or platform data corrections.
+    </p>
+  </div>
+</div>
+
+<div class="card mb-20">
+  <h2 class="card-title">
+    {% if account.role == "ADMIN" %}All Platform Tickets ({{ incoming_tickets|length }}){% else %}Incoming Department Queue — {{ account.get_role_display }} ({{ incoming_tickets|length }}){% endif %}
+  </h2>
+  {% if incoming_tickets %}
+  <table>
+    <thead>
+      <tr>
+        <th>Ticket ID</th>
+        <th>Subject &amp; Context</th>
+        <th>Raised By</th>
+        <th>Priority &amp; Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in incoming_tickets %}
+      <tr>
+        <td><strong><a href="/helpdesk/{{ t.ticket_code }}/">{{ t.ticket_code }}</a></strong></td>
+        <td>
+          <strong>{{ t.subject }}</strong>
+          <div class="muted">
+            Target: {{ t.get_target_role_display }}
+            {% if t.related_drive %} · Drive: {{ t.related_drive.company_name }}{% endif %}
+          </div>
+        </td>
+        <td>
+          {{ t.created_by.name }}<br />
+          <span class="muted">{{ t.created_by.regno_or_id }} ({{ t.created_by.role }})</span>
+        </td>
+        <td>
+          {% if t.priority == "URGENT" %}
+            <span class="badge badge-solid">Urgent</span>
+          {% else %}
+            <span class="badge badge-muted">Normal</span>
+          {% endif %}
+          <span class="badge">{{ t.get_status_display }}</span>
+        </td>
+        <td>
+          <a href="/helpdesk/{{ t.ticket_code }}/" class="btn btn-primary btn-sm">Open Thread</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No incoming tickets in your department queue.</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2 class="card-title">Tickets Raised by You ({{ raised_tickets|length }})</h2>
+  {% if raised_tickets %}
+  <table>
+    <thead>
+      <tr>
+        <th>Ticket ID</th>
+        <th>Subject &amp; Target</th>
+        <th>Priority &amp; Status</th>
+        <th>Updated</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in raised_tickets %}
+      <tr>
+        <td><strong><a href="/helpdesk/{{ t.ticket_code }}/">{{ t.ticket_code }}</a></strong></td>
+        <td>
+          <strong>{{ t.subject }}</strong>
+          <div class="muted">
+            Directed to: {{ t.get_target_role_display }}
+            {% if t.related_drive %} · Drive: {{ t.related_drive.company_name }}{% endif %}
+          </div>
+        </td>
+        <td>
+          {% if t.priority == "URGENT" %}
+            <span class="badge badge-solid">Urgent</span>
+          {% else %}
+            <span class="badge badge-muted">Normal</span>
+          {% endif %}
+          <span class="badge">{{ t.get_status_display }}</span>
+        </td>
+        <td class="muted">{{ t.updated_at|date:"M d, Y H:i" }}</td>
+        <td>
+          <a href="/helpdesk/{{ t.ticket_code }}/" class="btn btn-secondary btn-sm">View Thread</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">You have not raised any support tickets yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

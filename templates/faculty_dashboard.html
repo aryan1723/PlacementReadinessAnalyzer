@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Faculty Verification & Guidance — P06{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-kicker">Faculty Workspace · {{ account.regno_or_id }}</div>
+    <h1 class="page-title">Student Verification &amp; Guidance</h1>
+    <p class="page-subtitle">Search students by registration number, audit submitted evidence claims, assign verified levels (1–4), and author preparation paths.</p>
+  </div>
+</div>
+
+{% if guidance_saved %}
+<div class="notice">Faculty preparation guidance published to the student's dashboard.</div>
+{% endif %}
+
+<div class="card mb-20">
+  <h2 class="card-title">Search Students &amp; Filter Evidence Queue</h2>
+  <form method="get" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+    <div style="flex: 2; min-width: 220px;">
+      <label for="q">Student Regno. / Name / Branch / Claim Title</label>
+      <input type="text" id="q" name="q" value="{{ search_q }}" placeholder="e.g. 12204512 or CSE" />
+    </div>
+    <div style="flex: 1; min-width: 180px;">
+      <label for="status">Claim Status</label>
+      <select id="status" name="status">
+        <option value="">All Statuses</option>
+        <option value="PENDING" {% if claim_status == "PENDING" %}selected{% endif %}>Pending Review</option>
+        <option value="VERIFIED" {% if claim_status == "VERIFIED" %}selected{% endif %}>Verified</option>
+        <option value="DECLINED" {% if claim_status == "DECLINED" %}selected{% endif %}>Declined</option>
+      </select>
+    </div>
+    <div>
+      <button type="submit" class="btn btn-primary">Filter</button>
+      {% if search_q or claim_status %}
+      <a href="/faculty/dashboard/" class="btn btn-secondary">Reset</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="card mb-20">
+  <h2 class="card-title">Student Directory ({{ students|length }})</h2>
+  {% if students %}
+  <table>
+    <thead>
+      <tr>
+        <th>Regno. / ID</th>
+        <th>Student Name</th>
+        <th>Branch &amp; Year</th>
+        <th>CGPA / Backlogs</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sp in students %}
+      <tr>
+        <td><strong>{{ sp.user.regno_or_id }}</strong></td>
+        <td>{{ sp.user.name }}</td>
+        <td>{{ sp.branch|default:"—" }} · {{ sp.graduation_year|default:"—" }}</td>
+        <td>{{ sp.cgpa }} CGPA · {{ sp.backlogs }} Backlogs</td>
+        <td>
+          <a href="/faculty/student/{{ sp.user.regno_or_id }}/" class="btn btn-primary btn-sm">Inspect Dossier</a>
+          <a href="/faculty/dashboard/?student_id={{ sp.id }}#guidance-box" class="btn btn-secondary btn-sm">Assign Guidance</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No students match the search criteria.</p>
+  {% endif %}
+</div>
+
+<div class="card mb-20">
+  <h2 class="card-title">Evidence Claims Review Queue ({{ claims|length }})</h2>
+  {% if claims %}
+  <table>
+    <thead>
+      <tr>
+        <th>Student</th>
+        <th>Category &amp; Skill</th>
+        <th>Claim &amp; Proof</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in claims %}
+      <tr>
+        <td>
+          <strong><a href="/faculty/student/{{ c.student.user.regno_or_id }}/">{{ c.student.user.regno_or_id }}</a></strong><br />
+          <span class="muted">{{ c.student.user.name }}</span>
+        </td>
+        <td>
+          <span class="badge">{{ c.get_claim_type_display }}</span><br />
+          {% if c.skill %}<strong>{{ c.skill.name }}</strong>{% else %}<span class="muted">Unmapped</span>{% endif %}
+        </td>
+        <td>
+          <strong>{{ c.title }}</strong>
+          {% if c.organization %}<div class="muted">Org: {{ c.organization }}</div>{% endif %}
+          {% if c.tech_stack %}<div class="muted">Stack: {{ c.tech_stack }}</div>{% endif %}
+          {% if c.score_text %}<div class="muted">Score: {{ c.score_text }}</div>{% endif %}
+          <div class="mt-12" style="display:flex; gap:6px; flex-wrap:wrap;">
+            {% if c.proof_link %}<a href="{{ c.proof_link }}" target="_blank" class="btn btn-secondary btn-sm">Link</a>{% endif %}
+            {% if c.certificate_document %}<a href="{{ c.certificate_document.url }}" target="_blank" class="btn btn-secondary btn-sm">Certificate</a>{% endif %}
+            {% if c.proof_attachment %}<a href="{{ c.proof_attachment.url }}" target="_blank" class="btn btn-secondary btn-sm">File</a>{% endif %}
+          </div>
+        </td>
+        <td>
+          {% if c.status == "VERIFIED" %}
+            <span class="badge badge-solid">Verified · Lvl {{ c.verified_level }}</span>
+          {% elif c.status == "DECLINED" %}
+            <span class="badge badge-muted">Declined</span>
+          {% else %}
+            <span class="badge">Pending</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/faculty/verify/{{ c.id }}/" class="btn btn-primary btn-sm">Review / Verify</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No evidence claims match the current filter.</p>
+  {% endif %}
+</div>
+
+<div class="grid-2" id="guidance-box">
+  <div class="card">
+    <h2 class="card-title">Author Student Guidance Path</h2>
+    <form method="post">
+      {% csrf_token %}
+      {% for field in guidance_form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <ul class="errorlist">
+          {% for err in field.errors %}<li>{{ err }}</li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary">Publish Guidance</button>
+    </form>
+  </div>
+
+  <div class="card-surface">
+    <h2 class="card-title">Recently Issued Guidance</h2>
+    {% if recent_guidance %}
+    <table>
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Path &amp; Skill</th>
+          <th>Weeks</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in recent_guidance %}
+        <tr>
+          <td>
+            <strong>{{ g.student.user.regno_or_id }}</strong><br />
+            <span class="muted">{{ g.student.user.name }}</span>
+          </td>
+          <td>
+            <strong>{{ g.path_title }}</strong><br />
+            <span class="muted">{% if g.skill %}{{ g.skill.name }} · {% endif %}{{ g.guidance_feedback|truncatechars:80 }}</span>
+          </td>
+          <td>{{ g.target_weeks }}w</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No guidance paths authored yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
